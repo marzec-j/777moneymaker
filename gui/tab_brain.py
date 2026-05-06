@@ -227,8 +227,8 @@ class BrainDetail(QScrollArea):
         action_color = _ACTION_COLOR.get(action, COLOR_MUTED)
         for title, val, color in [
             ("Decyzja",  action,       action_color),
-            ("Pewność",  f"{conf:.0%}", "#d4d4d4"),
-            ("Analizy",  str(entry.get("analyze_count", 0)), "#d4d4d4"),
+            ("Pewność",  f"{conf:.0%}", "#e2e8f0"),
+            ("Analizy",  str(entry.get("analyze_count", 0)), "#e2e8f0"),
         ]:
             c = self._card(title, val)
             # tint the value label
@@ -257,7 +257,7 @@ class BrainDetail(QScrollArea):
             sc_color = _ACTION_COLOR.get(sc_action, COLOR_MUTED)
             for title, val, color in [
                 ("Sygnał",    sc_action,           sc_color),
-                ("Pewność",   f"{sc_conf:.0%}" if sc_conf > 0 else "—", "#d4d4d4"),
+                ("Pewność",   f"{sc_conf:.0%}" if sc_conf > 0 else "—", "#e2e8f0"),
                 ("Ostatni skan", _hours_ago(sc_ts) if sc_ts else "brak", COLOR_MUTED),
             ]:
                 c = self._card(title, val)

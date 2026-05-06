@@ -88,7 +88,7 @@ class ScanConsoleWidget(QWidget):
         elif "HOLD" in entry:
             fmt.setForeground(QColor(COLOR_MUTED))
         else:
-            fmt.setForeground(QColor("#d4d4d4"))
+            fmt.setForeground(QColor("#e2e8f0"))
 
         cursor.setCharFormat(fmt)
         cursor.insertText(entry + "\n")

@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout, QWidget,
 )
 
-from .styles import COLOR_GREEN, COLOR_RED, COLOR_GOLD, COLOR_MUTED, COLOR_BG, COLOR_PANEL
+from .styles import COLOR_GREEN, COLOR_RED, COLOR_GOLD, COLOR_MUTED, COLOR_BG, COLOR_PANEL, COLOR_BORDER, COLOR_FG, COLOR_CARD
 from . import log_action
 
 
@@ -118,7 +118,7 @@ class DecisionDetail(QScrollArea):
         super().__init__(parent)
         self.setWidgetResizable(True)
         self.setFrameShape(QFrame.NoFrame)
-        self.setStyleSheet(f"background: {COLOR_PANEL};")
+        self.setStyleSheet(f"background: {COLOR_PANEL}; border-radius: 8px;")
 
         container = QWidget()
         self._lay = QVBoxLayout(container)
@@ -153,7 +153,7 @@ class DecisionDetail(QScrollArea):
         # ── Header badge ──────────────────────────────────────────────────
         hdr = QHBoxLayout()
         lbl_sym = QLabel(sym)
-        lbl_sym.setStyleSheet("font-size: 22px; font-weight: bold; color: #e0e0e0;")
+        lbl_sym.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {COLOR_FG};")
 
         action_color = _ACTION_COLOR.get(action, "#d4d4d4")
         lbl_action = QLabel(action)
@@ -222,7 +222,7 @@ class DecisionDetail(QScrollArea):
         self._add_section_label("ROZUMOWANIE AI")
         lbl_reason = QLabel(dec.get("reasoning", "brak"))
         lbl_reason.setWordWrap(True)
-        lbl_reason.setStyleSheet("font-size: 12px; color: #c8c8c8; line-height: 1.5;")
+        lbl_reason.setStyleSheet(f"font-size: 12px; color: {COLOR_FG}; line-height: 1.5;")
         self._lay.addWidget(lbl_reason)
 
         # ── Key signals ───────────────────────────────────────────────────
@@ -242,7 +242,7 @@ class DecisionDetail(QScrollArea):
     def _add_separator(self):
         line = QFrame()
         line.setFrameShape(QFrame.HLine)
-        line.setStyleSheet(f"color: #333333;")
+        line.setStyleSheet(f"color: {COLOR_BORDER};")
         self._lay.addWidget(line)
 
     def _add_section_label(self, text: str):
@@ -252,14 +252,14 @@ class DecisionDetail(QScrollArea):
 
     def _small_card(self, title: str, value: str) -> QFrame:
         card = QFrame()
-        card.setStyleSheet(f"background: {COLOR_BG}; border-radius: 4px; padding: 2px;")
+        card.setStyleSheet(f"background: {COLOR_CARD}; border: 1px solid {COLOR_BORDER}; border-radius: 6px; padding: 2px;")
         lay = QVBoxLayout(card)
         lay.setContentsMargins(8, 6, 8, 6)
         lay.setSpacing(2)
         lbl_t = QLabel(title.upper())
         lbl_t.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 9px; font-weight: bold;")
         lbl_v = QLabel(value)
-        lbl_v.setStyleSheet("font-size: 13px; font-weight: bold; color: #d4d4d4;")
+        lbl_v.setStyleSheet(f"font-size: 13px; font-weight: bold; color: {COLOR_FG}; font-family: 'JetBrains Mono', 'Consolas', monospace;")
         lay.addWidget(lbl_t)
         lay.addWidget(lbl_v)
         return card

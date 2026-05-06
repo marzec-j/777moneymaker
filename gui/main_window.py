@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QStatusBar, QLabel
+from PySide6.QtWidgets import QMainWindow, QTabWidget, QStatusBar, QLabel, QHBoxLayout, QWidget
 
-from .styles import DARK_THEME
+from .styles import DARK_THEME, COLOR_GREEN, COLOR_RED, COLOR_GOLD, COLOR_MUTED
 from .alpaca_poller import AlpacaPoller
 from .trading_worker import TradingWorker
 from .tab_dashboard import DashboardTab
@@ -101,18 +101,38 @@ class MainWindow(QMainWindow):
 
     def _build_statusbar(self):
         self._statusbar = QStatusBar()
-        self._statusbar.setStyleSheet("color: #858585; font-size: 11px;")
         self.setStatusBar(self._statusbar)
 
-        self._lbl_bot_status = QLabel("TradeBot: stopped")
-        self._statusbar.addWidget(self._lbl_bot_status)
+        _mono = "font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 11px;"
+        _muted = f"color: {COLOR_MUTED}; {_mono}"
 
-        self._lbl_brain_status = QLabel("BrainBot: initializing…")
-        self._lbl_brain_status.setStyleSheet("color: #858585; font-size: 11px;")
+        # TradeBot indicator
+        self._dot_bot = QLabel("●")
+        self._dot_bot.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 9px;")
+        self._lbl_bot_label = QLabel("TradeBot:")
+        self._lbl_bot_label.setStyleSheet(_muted)
+        self._lbl_bot_status = QLabel("stopped")
+        self._lbl_bot_status.setStyleSheet(_muted)
+
+        # BrainBot indicator
+        self._dot_brain = QLabel("●")
+        self._dot_brain.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 9px;")
+        self._lbl_brain_label = QLabel("BrainBot:")
+        self._lbl_brain_label.setStyleSheet(_muted)
+        self._lbl_brain_status = QLabel("initializing…")
+        self._lbl_brain_status.setStyleSheet(_muted)
+
+        self._statusbar.addWidget(self._dot_bot)
+        self._statusbar.addWidget(self._lbl_bot_label)
+        self._statusbar.addWidget(self._lbl_bot_status)
+        self._statusbar.addWidget(QLabel("  "))   # spacer
+        self._statusbar.addWidget(self._dot_brain)
+        self._statusbar.addWidget(self._lbl_brain_label)
         self._statusbar.addWidget(self._lbl_brain_status)
 
+        # Alpaca (right side)
         self._lbl_alpaca_status = QLabel("Alpaca: connecting…")
-        self._lbl_alpaca_status.setStyleSheet("color: #858585; font-size: 11px;")
+        self._lbl_alpaca_status.setStyleSheet(_muted)
         self._statusbar.addPermanentWidget(self._lbl_alpaca_status)
 
     def _connect_signals(self):
@@ -170,27 +190,41 @@ class MainWindow(QMainWindow):
         self._tab_chart.on_poller_ready()
 
     def _on_bot_status(self, status: str):
-        labels = {
-            "Running":   "TradeBot: running",
-            "Stopped":   "TradeBot: stopped",
-            "Stopping…": "TradeBot: stopping…",
-            "Error":     "TradeBot: error",
-            "Starting…": "TradeBot: starting…",
+        _mono = "font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 11px;"
+        label_map = {
+            "Running":   ("running",     COLOR_GREEN),
+            "Stopped":   ("stopped",     COLOR_MUTED),
+            "Stopping…": ("stopping…",   COLOR_MUTED),
+            "Error":     ("error",       COLOR_RED),
+            "Starting…": ("starting…",   COLOR_GOLD),
         }
-        self._lbl_bot_status.setText(labels.get(status, f"TradeBot: {status}"))
+        text, color = label_map.get(status, (status.lower(), COLOR_MUTED))
+        self._lbl_bot_status.setText(text)
+        self._lbl_bot_status.setStyleSheet(f"color: {color}; {_mono}")
+        self._dot_bot.setStyleSheet(
+            f"color: {color}; font-size: 9px;"
+            + (" qproperty-text: '●';" if status == "Running" else "")
+        )
 
     def _on_alpaca_status(self, status: str):
+        _mono = "font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 11px;"
         if "LIVE" in status:
-            color = "#ff6b6b"
-        elif "PAPER" in status or "Alpaca" in status:
-            color = "#4ec94e"
+            color = COLOR_RED
+        elif "PAPER" in status or "connected" in status.lower():
+            color = COLOR_GOLD
         else:
-            color = "#858585"
+            color = COLOR_MUTED
         self._lbl_alpaca_status.setText(f"Alpaca: {status}")
-        self._lbl_alpaca_status.setStyleSheet(f"color: {color}; font-size: 11px;")
+        self._lbl_alpaca_status.setStyleSheet(f"color: {color}; {_mono}")
 
     def _on_brain_scanner_status(self, status: str):
-        self._lbl_brain_status.setText(f"BrainBot: {status}")
+        _mono = "font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 11px;"
+        short = status[:60]
+        running = any(k in status.lower() for k in ("scan", "llm", "running", "analiz"))
+        color = COLOR_GOLD if running else COLOR_MUTED
+        self._lbl_brain_status.setText(short)
+        self._lbl_brain_status.setStyleSheet(f"color: {color}; {_mono}")
+        self._dot_brain.setStyleSheet(f"color: {color}; font-size: 9px;")
         self._tab_brainbot.on_scanner_status(status)
 
     def _on_journal_updated(self):

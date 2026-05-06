@@ -21,7 +21,7 @@ from .styles import (
 from . import log_action
 
 pg.setConfigOption("background", COLOR_BG)
-pg.setConfigOption("foreground", "#d4d4d4")
+pg.setConfigOption("foreground", "#e2e8f0")
 pg.setConfigOption("antialias", True)
 
 # columns per layout button value
@@ -183,7 +183,7 @@ class ChartPanel(QFrame):
         self._candles = CandlestickItem()
         self._plot.addItem(self._candles)
         self._ema20 = self._plot.plot(pen=pg.mkPen("#74c0fc", width=1.2), name="EMA20")
-        self._ema50 = self._plot.plot(pen=pg.mkPen("#ffd43b", width=1.2), name="EMA50")
+        self._ema50 = self._plot.plot(pen=pg.mkPen("#eab308", width=1.2), name="EMA50")
 
         self._entry_scatter = pg.ScatterPlotItem(
             symbol="t1", size=16,

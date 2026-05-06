@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea,
     QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
-from .styles import COLOR_GREEN, COLOR_RED, COLOR_MUTED, COLOR_BG
+from .styles import COLOR_GREEN, COLOR_RED, COLOR_MUTED, COLOR_BG, COLOR_PANEL, COLOR_BORDER, COLOR_GOLD, COLOR_FG
 from . import log_action
 
 
@@ -22,15 +22,20 @@ def _card(parent=None) -> QFrame:
     return f
 
 
-def _stat_card(title: str, value: str = "—", color: str = "#d4d4d4"):
+def _stat_card(title: str, value: str = "—", color: str = "#e2e8f0"):
     card = _card()
     lay = QVBoxLayout(card)
-    lay.setContentsMargins(16, 12, 16, 12)
-    lay.setSpacing(4)
+    lay.setContentsMargins(16, 14, 16, 14)
+    lay.setSpacing(6)
     lbl_title = QLabel(title.upper())
-    lbl_title.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px; font-weight: bold;")
+    lbl_title.setStyleSheet(
+        f"color: {COLOR_MUTED}; font-size: 10px; font-weight: 600; letter-spacing: 0.8px;"
+    )
     lbl_val = QLabel(value)
-    lbl_val.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {color};")
+    lbl_val.setStyleSheet(
+        f"font-size: 24px; font-weight: 700; color: {color};"
+        " font-family: 'JetBrains Mono', 'Consolas', monospace;"
+    )
     lay.addWidget(lbl_title)
     lay.addWidget(lbl_val)
     return card, lbl_val
@@ -98,10 +103,15 @@ class DashboardTab(QWidget):
         tb_lay.setContentsMargins(16, 12, 16, 12)
 
         lbl_tb = QLabel("TRADEBOT")
-        lbl_tb.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px; font-weight: bold;")
+        lbl_tb.setStyleSheet(
+            f"color: {COLOR_MUTED}; font-size: 10px; font-weight: 600; letter-spacing: 0.8px;"
+        )
 
         self._lbl_status = QLabel("Stopped")
-        self._lbl_status.setStyleSheet("font-size: 15px; font-weight: bold; color: #858585;")
+        self._lbl_status.setStyleSheet(
+            f"font-size: 14px; font-weight: 700; color: {COLOR_MUTED};"
+            " font-family: 'JetBrains Mono', 'Consolas', monospace;"
+        )
 
         self._lbl_mode = QLabel(self._mode_label())
         self._lbl_mode.setStyleSheet(f"font-size: 11px; color: {COLOR_MUTED};")
@@ -141,10 +151,15 @@ class DashboardTab(QWidget):
         brain_lay.setContentsMargins(16, 12, 16, 12)
 
         lbl_bb = QLabel("BRAINBOT")
-        lbl_bb.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px; font-weight: bold;")
+        lbl_bb.setStyleSheet(
+            f"color: {COLOR_MUTED}; font-size: 10px; font-weight: 600; letter-spacing: 0.8px;"
+        )
 
         self._lbl_brain_status = QLabel("Stopped")
-        self._lbl_brain_status.setStyleSheet("font-size: 15px; font-weight: bold; color: #858585;")
+        self._lbl_brain_status.setStyleSheet(
+            f"font-size: 14px; font-weight: 700; color: {COLOR_MUTED};"
+            " font-family: 'JetBrains Mono', 'Consolas', monospace;"
+        )
 
         self._lbl_brain_info = QLabel("—")
         self._lbl_brain_info.setStyleSheet(f"font-size: 11px; color: {COLOR_MUTED};")
@@ -178,17 +193,22 @@ class DashboardTab(QWidget):
         chart_lay.setSpacing(6)
 
         chart_hdr = QHBoxLayout()
-        lbl_chart = QLabel("EQUITY CHART (session)")
-        lbl_chart.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px; font-weight: bold;")
+        lbl_chart = QLabel("SESSION EQUITY")
+        lbl_chart.setStyleSheet(
+            f"color: {COLOR_MUTED}; font-size: 10px; font-weight: 600; letter-spacing: 0.8px;"
+        )
         self._lbl_equity_hdr = QLabel("—")
-        self._lbl_equity_hdr.setStyleSheet("font-size: 13px; font-weight: bold; color: #d4d4d4;")
+        self._lbl_equity_hdr.setStyleSheet(
+            f"font-size: 14px; font-weight: 700; color: {COLOR_FG};"
+            " font-family: 'JetBrains Mono', 'Consolas', monospace;"
+        )
         chart_hdr.addWidget(lbl_chart)
         chart_hdr.addStretch()
         chart_hdr.addWidget(self._lbl_equity_hdr)
         chart_lay.addLayout(chart_hdr)
 
-        self._equity_plot = pg.PlotWidget(background=COLOR_BG)
-        self._equity_plot.setFixedHeight(170)
+        self._equity_plot = pg.PlotWidget(background="#0c1421")
+        self._equity_plot.setFixedHeight(190)
         self._equity_plot.showGrid(x=False, y=True, alpha=0.12)
         self._equity_plot.getPlotItem().hideAxis("bottom")
         self._equity_plot.getPlotItem().getAxis("left").setStyle(tickTextOffset=4)
@@ -221,7 +241,9 @@ class DashboardTab(QWidget):
         trades_lay.setSpacing(8)
 
         lbl_trades = QLabel("RECENT TRADES")
-        lbl_trades.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px; font-weight: bold;")
+        lbl_trades.setStyleSheet(
+            f"color: {COLOR_MUTED}; font-size: 10px; font-weight: 600; letter-spacing: 0.8px;"
+        )
         trades_lay.addWidget(lbl_trades)
 
         cols = ["Czas", "Symbol", "Akcja", "Qty", "Cena", "SL", "TP", "Pewność"]
@@ -242,10 +264,15 @@ class DashboardTab(QWidget):
         signal_lay.setSpacing(6)
 
         lbl_sig = QLabel("OSTATNI SYGNAŁ AI")
-        lbl_sig.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px; font-weight: bold;")
+        lbl_sig.setStyleSheet(
+            f"color: {COLOR_MUTED}; font-size: 10px; font-weight: 600; letter-spacing: 0.8px;"
+        )
 
         self._lbl_last_signal = QLabel("Brak sygnałów")
-        self._lbl_last_signal.setStyleSheet("font-size: 13px; color: #d4d4d4;")
+        self._lbl_last_signal.setStyleSheet(
+            f"font-size: 12px; color: {COLOR_FG};"
+            " font-family: 'JetBrains Mono', 'Consolas', monospace;"
+        )
         self._lbl_last_signal.setWordWrap(True)
 
         signal_lay.addWidget(lbl_sig)
@@ -293,7 +320,7 @@ class DashboardTab(QWidget):
             action = row.get("action", "")
             col = (COLOR_GREEN if action in ("BUY", "COVER", "TP_EXIT")
                    else COLOR_RED if action in ("SELL", "SHORT", "SL_EXIT")
-                   else "#d4d4d4")
+                   else COLOR_FG)
 
             def _item(text, align=Qt.AlignRight, fg=None):
                 it = QTableWidgetItem(str(text))
@@ -355,15 +382,21 @@ class DashboardTab(QWidget):
         cash   = acc.get("cash", 0.0)
         stocks = acc.get("portfolio_value", 0.0)
 
+        _mono = "font-size: 24px; font-weight: 700; font-family: 'JetBrains Mono', 'Consolas', monospace;"
         self._lbl_cash.setText(f"${cash:,.2f}")
+        self._lbl_cash.setStyleSheet(f"{_mono} color: {COLOR_FG};")
         self._lbl_stocks.setText(f"${stocks:,.2f}")
+        self._lbl_stocks.setStyleSheet(f"{_mono} color: {COLOR_FG};")
 
         if self._start_equity is None:
             self._start_equity = equity
         daily_pnl = equity - self._start_equity
         color = COLOR_GREEN if daily_pnl >= 0 else COLOR_RED
         self._lbl_pnl.setText(f"${daily_pnl:+,.2f}")
-        self._lbl_pnl.setStyleSheet(f"font-size: 22px; font-weight: bold; color: {color};")
+        self._lbl_pnl.setStyleSheet(
+            f"font-size: 24px; font-weight: 700; color: {color};"
+            " font-family: 'JetBrains Mono', 'Consolas', monospace;"
+        )
 
         t = time.time() - self._session_start
         self._equity_times.append(t)
@@ -377,16 +410,17 @@ class DashboardTab(QWidget):
         self._lbl_pos.setText(str(len(positions)))
 
     def _on_status(self, status: str):
+        _base = "font-size: 14px; font-weight: 700; font-family: 'JetBrains Mono', 'Consolas', monospace;"
         labels = {
             "Running":   ("Działa",      COLOR_GREEN),
             "Stopped":   ("Zatrzymany",  COLOR_MUTED),
             "Stopping…": ("Zatrzymuję…", COLOR_MUTED),
             "Error":     ("Błąd",        COLOR_RED),
-            "Starting…": ("Startuje…",   "#ffd43b"),
+            "Starting…": ("Startuje…",   COLOR_GOLD),
         }
-        text, color = labels.get(status, (status, "#d4d4d4"))
+        text, color = labels.get(status, (status, COLOR_FG))
         self._lbl_status.setText(text)
-        self._lbl_status.setStyleSheet(f"font-size: 15px; font-weight: bold; color: {color};")
+        self._lbl_status.setStyleSheet(f"{_base} color: {color};")
         running = status == "Running"
         self._btn_start.setEnabled(not running)
         self._btn_stop.setEnabled(running)
@@ -425,18 +459,16 @@ class DashboardTab(QWidget):
         self._lbl_brain_info.setText(status[:80])
 
     def _on_brain_started(self):
+        _base = "font-size: 14px; font-weight: 700; font-family: 'JetBrains Mono', 'Consolas', monospace;"
         self._lbl_brain_status.setText("Działa")
-        self._lbl_brain_status.setStyleSheet(
-            f"font-size: 15px; font-weight: bold; color: {COLOR_GREEN};"
-        )
+        self._lbl_brain_status.setStyleSheet(f"{_base} color: {COLOR_GOLD};")
         self._btn_brain_start.setEnabled(False)
         self._btn_brain_stop.setEnabled(True)
 
     def _on_brain_finished(self):
+        _base = "font-size: 14px; font-weight: 700; font-family: 'JetBrains Mono', 'Consolas', monospace;"
         self._lbl_brain_status.setText("Zatrzymany")
-        self._lbl_brain_status.setStyleSheet(
-            "font-size: 15px; font-weight: bold; color: #858585;"
-        )
+        self._lbl_brain_status.setStyleSheet(f"{_base} color: {COLOR_MUTED};")
         self._btn_brain_start.setEnabled(True)
         self._btn_brain_stop.setEnabled(False)
         self._lbl_brain_info.setText("—")

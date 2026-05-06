@@ -248,7 +248,7 @@ class MarketTab(QWidget):
         sig     = row["signal"]
         s_color = (QColor(COLOR_GREEN) if "BUY" in sig or "Bull" in sig
                    else QColor(COLOR_RED) if "SELL" in sig or "Bear" in sig
-                   else QColor("#d4d4d4"))
+                   else QColor("#e2e8f0"))
 
         def _item(text, color=None, align=Qt.AlignRight):
             it = QTableWidgetItem(str(text))
@@ -304,7 +304,7 @@ class MarketTab(QWidget):
                 pos_text += f"  {pnl:+,.0f}$"
             else:
                 pos_text  = "—"
-                pos_color = QColor("#d4d4d4")
+                pos_color = QColor("#e2e8f0")
             it = QTableWidgetItem(pos_text)
             it.setTextAlignment(Qt.AlignLeft | Qt.AlignVCenter)
             if pos_color:

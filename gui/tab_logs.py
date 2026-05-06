@@ -6,15 +6,15 @@ from PySide6.QtWidgets import (
     QComboBox, QHBoxLayout, QLabel, QPushButton,
     QTextEdit, QVBoxLayout, QWidget,
 )
-from .styles import COLOR_GREEN, COLOR_RED, COLOR_GOLD, COLOR_MUTED
+from .styles import COLOR_GREEN, COLOR_RED, COLOR_GOLD, COLOR_MUTED, COLOR_FG
 from . import log_action
 
 
 _LEVEL_COLORS = {
-    "DEBUG":    "#858585",
-    "INFO":     "#d4d4d4",
-    "WARNING":  "#ffd43b",
-    "ERROR":    "#f03e3e",
+    "DEBUG":    COLOR_MUTED,
+    "INFO":     COLOR_FG,
+    "WARNING":  COLOR_GOLD,
+    "ERROR":    COLOR_RED,
     "CRITICAL": "#ff6b6b",
 }
 
@@ -105,7 +105,7 @@ class LogsTab(QWidget):
         cursor.movePosition(QTextCursor.End)
 
         fmt = QTextCharFormat()
-        color = _LEVEL_COLORS.get(level, "#d4d4d4")
+        color = _LEVEL_COLORS.get(level, COLOR_FG)
 
         # Highlight special keywords
         for kw, kw_color in _KEYWORD_COLORS.items():
