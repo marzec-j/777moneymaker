@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 
 from .styles import (
     COLOR_BG, COLOR_PANEL, COLOR_CARD, COLOR_BORDER,
-    COLOR_GREEN, COLOR_RED, COLOR_MUTED,
+    COLOR_GREEN, COLOR_RED, COLOR_MUTED, make_page_header,
 )
 from . import log_action
 
@@ -677,17 +677,14 @@ class ChartTab(QWidget):
 
     def _build_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(12, 12, 12, 12)
-        root.setSpacing(8)
+        root.setContentsMargins(24, 24, 24, 24)
+        root.setSpacing(16)
+
+        root.addWidget(make_page_header("Chart", "Wykresy świecowe z wskaźnikami"))
 
         # ── Toolbar ───────────────────────────────────────────────────────
         tb = QHBoxLayout()
         tb.setSpacing(8)
-
-        title = QLabel("WYKRESY")
-        title.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px; font-weight: bold;")
-        tb.addWidget(title)
-        tb.addSpacing(12)
 
         lbl = QLabel("Layout:")
         lbl.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px;")

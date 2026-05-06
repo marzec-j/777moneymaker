@@ -12,7 +12,7 @@ from PySide6.QtWidgets import (
     QMessageBox, QPushButton, QScrollArea, QSpinBox,
     QTabWidget, QVBoxLayout, QWidget,
 )
-from .styles import COLOR_MUTED
+from .styles import COLOR_MUTED, make_page_header
 
 
 # ── Background workers ────────────────────────────────────────────────────────
@@ -79,7 +79,10 @@ class SettingsTab(QWidget):
 
     def _setup_ui(self):
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setContentsMargins(24, 24, 24, 24)
+        outer.setSpacing(16)
+
+        outer.addWidget(make_page_header("Settings", "Konfiguracja systemu"))
 
         self._tabs = QTabWidget()
         self._tabs.addTab(self._build_broker_tab(),   "🏦  Broker")

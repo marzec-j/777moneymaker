@@ -6,7 +6,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QHeaderView, QLabel, QLineEdit, QPushButton,
     QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
-from .styles import COLOR_GREEN, COLOR_RED, COLOR_MUTED
+from .styles import COLOR_GREEN, COLOR_RED, COLOR_MUTED, make_page_header
 from . import log_action
 
 
@@ -76,17 +76,14 @@ class MarketTab(QWidget):
 
     def _setup_ui(self):
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(16, 16, 16, 16)
-        lay.setSpacing(10)
+        lay.setContentsMargins(24, 24, 24, 24)
+        lay.setSpacing(16)
+
+        lay.addWidget(make_page_header("Market", "Przegląd rynku i symbole"))
 
         # ── Toolbar ───────────────────────────────────────────────────────
         tb = QHBoxLayout()
         tb.setSpacing(8)
-
-        title = QLabel("MARKET OVERVIEW")
-        title.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px; font-weight: bold;")
-        tb.addWidget(title)
-        tb.addSpacing(12)
 
         lbl_search = QLabel("Symbol:")
         lbl_search.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px;")

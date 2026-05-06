@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QFrame, QHBoxLayout, QLabel, QPushButton, QScrollArea,
     QSizePolicy, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
-from .styles import COLOR_GREEN, COLOR_RED, COLOR_MUTED, COLOR_BG, COLOR_PANEL, COLOR_BORDER, COLOR_GOLD, COLOR_FG
+from .styles import COLOR_GREEN, COLOR_RED, COLOR_MUTED, COLOR_BG, COLOR_PANEL, COLOR_BORDER, COLOR_GOLD, COLOR_FG, make_page_header
 from . import log_action
 
 
@@ -79,8 +79,11 @@ class DashboardTab(QWidget):
         scroll.setWidget(inner)
 
         root = QVBoxLayout(inner)
-        root.setContentsMargins(16, 16, 16, 16)
-        root.setSpacing(14)
+        root.setContentsMargins(24, 24, 24, 24)
+        root.setSpacing(16)
+
+        # ── 0. Page header ────────────────────────────────────────────────
+        root.addWidget(make_page_header("Dashboard", "Przegląd systemu handlowego"))
 
         # ── 1. Stat cards ─────────────────────────────────────────────────
         cards_row = QHBoxLayout()

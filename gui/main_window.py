@@ -1,10 +1,18 @@
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QMainWindow, QTabWidget, QStatusBar, QLabel, QHBoxLayout, QWidget
+from datetime import datetime
 
-from .styles import DARK_THEME, COLOR_GREEN, COLOR_RED, COLOR_GOLD, COLOR_MUTED
+from PySide6.QtCore import Qt, QTimer
+from PySide6.QtGui import QCursor
+from PySide6.QtWidgets import (
+    QFrame, QHBoxLayout, QLabel, QMainWindow,
+    QSizePolicy, QStackedWidget, QStatusBar, QVBoxLayout, QWidget,
+)
+
+from .styles import (
+    DARK_THEME,
+    COLOR_GREEN, COLOR_RED, COLOR_GOLD, COLOR_MUTED, COLOR_FG,
+)
 from .alpaca_poller import AlpacaPoller
 from .trading_worker import TradingWorker
 from .tab_dashboard import DashboardTab
@@ -21,166 +29,375 @@ from modules.brain_journal import BrainJournal
 from . import _register_log_callback, _unregister_log_callback
 
 
+# ── Navigation items definition ───────────────────────────────────────────────
+
+_NAV = [
+    ("📊", "Dashboard", 0),
+    ("📈", "Market",    1),
+    ("🕯",  "Chart",    2),
+    ("🧠", "BrainBot",  3),
+    ("🤖", "TradeBot",  4),
+    ("📰", "News",      5),
+    ("⚙",  "Settings", 6),
+]
+
+_MONO = "font-family: 'JetBrains Mono','Consolas',monospace;"
+_SANS = "font-family: 'Inter','Segoe UI',sans-serif;"
+
+
+# ── Single sidebar nav item ───────────────────────────────────────────────────
+
+class _NavItem(QWidget):
+
+    def __init__(self, icon: str, label: str, index: int, on_click, parent=None):
+        super().__init__(parent)
+        self._index    = index
+        self._active   = False
+        self._on_click = on_click
+
+        self.setCursor(QCursor(Qt.PointingHandCursor))
+        self.setFixedHeight(40)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(12, 0, 12, 0)
+        lay.setSpacing(10)
+
+        self._icon = QLabel(icon)
+        self._icon.setFixedWidth(22)
+        self._icon.setAlignment(Qt.AlignCenter)
+        self._icon.setAttribute(Qt.WA_TransparentForMouseEvents)
+
+        self._text = QLabel(label)
+        self._text.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self._text.setAttribute(Qt.WA_TransparentForMouseEvents)
+
+        self._dot = QLabel("●")
+        self._dot.setFixedWidth(10)
+        self._dot.setAlignment(Qt.AlignCenter)
+        self._dot.setVisible(False)
+        self._dot.setAttribute(Qt.WA_TransparentForMouseEvents)
+
+        lay.addWidget(self._icon)
+        lay.addWidget(self._text)
+        lay.addStretch()
+        lay.addWidget(self._dot)
+
+        self._paint(hover=False)
+
+    def set_active(self, active: bool):
+        self._active = active
+        self._dot.setVisible(active)
+        self._paint(hover=False)
+
+    def _paint(self, hover: bool):
+        _no_border = "background: transparent; border: none;"
+
+        if self._active:
+            self.setStyleSheet(
+                "QWidget { background: rgba(34,197,94,0.08);"
+                " border: 1px solid rgba(34,197,94,0.2); border-radius: 8px; }"
+            )
+            c, w = COLOR_GREEN, "600"
+        elif hover:
+            self.setStyleSheet(
+                "QWidget { background: #182537;"
+                " border: 1px solid transparent; border-radius: 8px; }"
+            )
+            c, w = COLOR_FG, "500"
+        else:
+            self.setStyleSheet(
+                "QWidget { background: transparent;"
+                " border: 1px solid transparent; border-radius: 8px; }"
+            )
+            c, w = COLOR_MUTED, "500"
+
+        self._icon.setStyleSheet(f"font-size: 16px; color: {c}; {_no_border}")
+        self._text.setStyleSheet(
+            f"font-size: 13px; font-weight: {w}; color: {c}; {_SANS} {_no_border}"
+        )
+        self._dot.setStyleSheet(f"font-size: 8px; color: {COLOR_GREEN}; {_no_border}")
+
+    def enterEvent(self, event):
+        if not self._active:
+            self._paint(hover=True)
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        if not self._active:
+            self._paint(hover=False)
+        super().leaveEvent(event)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            self._on_click(self._index)
+        super().mousePressEvent(event)
+
+
+# ── Sidebar widget ────────────────────────────────────────────────────────────
+
+class _Sidebar(QFrame):
+
+    def __init__(self, on_nav, parent=None):
+        super().__init__(parent)
+        self._on_nav = on_nav
+        self._items: list[_NavItem] = []
+
+        self.setFixedWidth(220)
+        self.setObjectName("sidebar")
+        self.setStyleSheet(
+            "QFrame#sidebar { background-color: #0c1421;"
+            " border-right: 1px solid #1e2d3f; }"
+        )
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        root.setSpacing(0)
+
+        # ── Logo ──────────────────────────────────────────────────────
+        logo_frame = QFrame()
+        logo_frame.setFixedHeight(56)
+        logo_frame.setStyleSheet(
+            "QFrame { background-color: #0c1421; border-bottom: 1px solid #1e2d3f; }"
+        )
+        ll = QHBoxLayout(logo_frame)
+        ll.setContentsMargins(16, 0, 16, 0)
+        ll.setSpacing(10)
+
+        badge = QLabel("7")
+        badge.setFixedSize(32, 32)
+        badge.setAlignment(Qt.AlignCenter)
+        badge.setStyleSheet(
+            "background: qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #22c55e,stop:1 #eab308); border-radius: 8px;"
+            "font-size: 15px; font-weight: 800; color: #080e1a; border: none;"
+        )
+
+        names = QWidget()
+        names.setStyleSheet("background: transparent;")
+        nl = QVBoxLayout(names)
+        nl.setContentsMargins(0, 0, 0, 0)
+        nl.setSpacing(0)
+
+        n1 = QLabel("777money")
+        n1.setStyleSheet(
+            "font-size: 13px; font-weight: 700; color: #e2e8f0; background: transparent; border: none;"
+        )
+        n2 = QLabel("maker")
+        n2.setStyleSheet(
+            f"font-size: 10px; color: {COLOR_GOLD}; {_MONO}"
+            " background: transparent; border: none;"
+        )
+        nl.addWidget(n1)
+        nl.addWidget(n2)
+
+        ll.addWidget(badge)
+        ll.addWidget(names)
+        ll.addStretch()
+        root.addWidget(logo_frame)
+
+        # ── Nav items ─────────────────────────────────────────────────
+        nav = QWidget()
+        nav.setStyleSheet("background: transparent;")
+        nav_lay = QVBoxLayout(nav)
+        nav_lay.setContentsMargins(8, 8, 8, 8)
+        nav_lay.setSpacing(2)
+        nav_lay.setAlignment(Qt.AlignTop)
+
+        for icon, label, idx in _NAV:
+            item = _NavItem(icon, label, idx, self._on_click)
+            self._items.append(item)
+            nav_lay.addWidget(item)
+
+        nav_lay.addStretch()
+        root.addWidget(nav, 1)
+
+        # ── Version ───────────────────────────────────────────────────
+        ver_frame = QFrame()
+        ver_frame.setFixedHeight(32)
+        ver_frame.setStyleSheet(
+            "QFrame { border-top: 1px solid #1e2d3f; background: transparent; }"
+        )
+        vl = QHBoxLayout(ver_frame)
+        vl.setContentsMargins(0, 0, 0, 0)
+        lv = QLabel("v2.1.0")
+        lv.setAlignment(Qt.AlignCenter)
+        lv.setStyleSheet(
+            f"color: {COLOR_MUTED}; font-size: 10px; {_MONO}"
+            " background: transparent; border: none;"
+        )
+        vl.addWidget(lv)
+        root.addWidget(ver_frame)
+
+        self._items[0].set_active(True)
+
+    def _on_click(self, index: int):
+        for item in self._items:
+            item.set_active(item._index == index)
+        self._on_nav(index)
+
+    def set_index(self, index: int):
+        for item in self._items:
+            item.set_active(item._index == index)
+
+
+# ── Main Window ───────────────────────────────────────────────────────────────
+
 class MainWindow(QMainWindow):
     def __init__(self, config: dict, config_path: str = "config.yaml"):
         super().__init__()
-        self._config = config
+        self._config      = config
         self._config_path = config_path
 
         self.setWindowTitle("777moneymaker — AI Trading System")
-        self.resize(1280, 820)
+        self.resize(1440, 880)
+        self.setMinimumSize(1100, 700)
         self.setStyleSheet(DARK_THEME)
 
-        # Współdzielony Brain — thread-safe, używany przez silnik i pollery
-        self._brain = SymbolBrain(config)
+        self._brain         = SymbolBrain(config)
+        self._journal       = BrainJournal(config)
+        self._brain_scanner = BrainScannerWorker(config, brain=self._brain, journal=self._journal)
+        self._worker        = TradingWorker(config, brain=self._brain, journal=self._journal)
+        self._poller        = AlpacaPoller(config)
+        self._news_poller   = NewsPoller(config, brain=self._brain, journal=self._journal)
 
-        # Journal BrainBota — dziennik rekomendacji
-        self._journal = BrainJournal(config)
-
-        # BrainBot — ciągły bot AI skanujący cały rynek
-        self._brain_scanner = BrainScannerWorker(
-            config, brain=self._brain, journal=self._journal
-        )
-
-        # TradeBot — bot tradingowy (działa na symbolach z journala)
-        self._worker = TradingWorker(config, brain=self._brain, journal=self._journal)
-
-        # Alpaca poller (lekki wątek — tylko account + positions)
-        self._poller = AlpacaPoller(config)
-
-        # News poller (co 60s pobiera newsy z Finnhub)
-        self._news_poller = NewsPoller(config, brain=self._brain, journal=self._journal)
-
-        # Build UI
-        self._build_tabs()
+        self._build_ui()
         self._build_statusbar()
         self._connect_signals()
         _register_log_callback(self._tab_tradebot.log_append)
 
-        # Status bar tick
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._tick_status)
         self._timer.start(1000)
 
-        # Uruchom pollery automatycznie; BrainBot i TradeBot startują manualnie
         self._poller.start()
         self._news_poller.start()
 
-    def _build_tabs(self):
-        tabs = QTabWidget()
-        tabs.setDocumentMode(True)
+    # ── UI construction ───────────────────────────────────────────────────────
 
+    def _build_ui(self):
+        central = QWidget()
+        self.setCentralWidget(central)
+
+        layout = QHBoxLayout(central)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+
+        # Sidebar
+        self._sidebar = _Sidebar(self._on_nav)
+        layout.addWidget(self._sidebar)
+
+        # Separator line (already handled by sidebar border-right)
+
+        # Page stack
+        self._stack = QStackedWidget()
+        self._stack.setStyleSheet("QStackedWidget { background: #080e1a; }")
+        layout.addWidget(self._stack)
+
+        # Create pages — order must match _NAV indices
         self._tab_dashboard = DashboardTab(self._worker, self._config, scanner=self._brain_scanner)
         self._tab_market    = MarketTab(self._config, self._worker, self._poller)
         self._tab_chart     = ChartTab(self._config, self._worker, self._poller)
-        self._tab_news      = NewsTab(self._config, self._worker)
-        self._tab_settings  = SettingsTab(self._config, self._config_path)
-
-        # BrainBot — podzakładki: Logi, Dziennik, Czat
-        self._tab_brainbot = BrainBotTab(
-            self._config,
-            brain=self._brain,
-            worker=self._worker,
-            scanner=self._brain_scanner,
-            journal=self._journal,
+        self._tab_brainbot  = BrainBotTab(
+            self._config, brain=self._brain, worker=self._worker,
+            scanner=self._brain_scanner, journal=self._journal,
         )
-
-        # TradeBot — podzakładki: Pozycje, Logi, Decyzje
         self._tab_tradebot = TradeBotTab(self._config, self._worker, self._poller)
+        self._tab_news     = NewsTab(self._config, self._worker)
+        self._tab_settings = SettingsTab(self._config, self._config_path)
 
-        tabs.addTab(self._tab_dashboard, "📊  Dashboard")
-        tabs.addTab(self._tab_market,    "📈  Market")
-        tabs.addTab(self._tab_chart,     "🕯  Chart")
-        tabs.addTab(self._tab_brainbot,  "🧠  BrainBot")
-        tabs.addTab(self._tab_tradebot,  "🤖  TradeBot")
-        tabs.addTab(self._tab_news,      "📰  News")
-        tabs.addTab(self._tab_settings,  "⚙️  Settings")
+        for page in (
+            self._tab_dashboard,   # 0
+            self._tab_market,      # 1
+            self._tab_chart,       # 2
+            self._tab_brainbot,    # 3
+            self._tab_tradebot,    # 4
+            self._tab_news,        # 5
+            self._tab_settings,    # 6
+        ):
+            self._stack.addWidget(page)
 
-        self.setCentralWidget(tabs)
-        self._tabs = tabs
+    def _on_nav(self, index: int):
+        self._stack.setCurrentIndex(index)
 
     def _build_statusbar(self):
         self._statusbar = QStatusBar()
         self.setStatusBar(self._statusbar)
 
-        _mono = "font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 11px;"
-        _muted = f"color: {COLOR_MUTED}; {_mono}"
+        _s = f"{_MONO} font-size: 11px;"
+        _muted = f"color: {COLOR_MUTED}; {_s}"
 
         # TradeBot indicator
         self._dot_bot = QLabel("●")
         self._dot_bot.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 9px;")
-        self._lbl_bot_label = QLabel("TradeBot:")
-        self._lbl_bot_label.setStyleSheet(_muted)
+        lbl_bot = QLabel("TradeBot:")
+        lbl_bot.setStyleSheet(_muted)
         self._lbl_bot_status = QLabel("stopped")
         self._lbl_bot_status.setStyleSheet(_muted)
 
         # BrainBot indicator
         self._dot_brain = QLabel("●")
         self._dot_brain.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 9px;")
-        self._lbl_brain_label = QLabel("BrainBot:")
-        self._lbl_brain_label.setStyleSheet(_muted)
+        lbl_brain = QLabel("BrainBot:")
+        lbl_brain.setStyleSheet(_muted)
         self._lbl_brain_status = QLabel("initializing…")
         self._lbl_brain_status.setStyleSheet(_muted)
 
-        self._statusbar.addWidget(self._dot_bot)
-        self._statusbar.addWidget(self._lbl_bot_label)
-        self._statusbar.addWidget(self._lbl_bot_status)
-        self._statusbar.addWidget(QLabel("  "))   # spacer
-        self._statusbar.addWidget(self._dot_brain)
-        self._statusbar.addWidget(self._lbl_brain_label)
-        self._statusbar.addWidget(self._lbl_brain_status)
+        for w in (self._dot_bot, lbl_bot, self._lbl_bot_status,
+                  QLabel("  "),
+                  self._dot_brain, lbl_brain, self._lbl_brain_status):
+            w.setStyleSheet(w.styleSheet() or _muted)
+            self._statusbar.addWidget(w)
 
-        # Alpaca (right side)
         self._lbl_alpaca_status = QLabel("Alpaca: connecting…")
         self._lbl_alpaca_status.setStyleSheet(_muted)
         self._statusbar.addPermanentWidget(self._lbl_alpaca_status)
 
     def _connect_signals(self):
-        # ── Market tab: double-click → chart ─────────────────────────────
+        # Market → open chart on double-click
         self._tab_market.symbol_selected.connect(self._open_chart_for_symbol)
 
-        # ── TradeBot (worker) signals ─────────────────────────────────────
+        # TradeBot worker
         self._worker.status_changed.connect(self._on_bot_status)
         self._worker.error_occurred.connect(
-            lambda e: self._lbl_bot_status.setText(f"TradeBot: Error — {e}")
+            lambda e: self._lbl_bot_status.setText(f"error — {e[:40]}")
         )
-        # Uczenie BrainBota na zamkniętych transakcjach TradeBota
         self._worker.trade_closed.connect(self._on_trade_closed)
 
-        # ── Alpaca poller ─────────────────────────────────────────────────
+        # Alpaca poller → multiple consumers
         self._poller.account_updated.connect(self._tab_dashboard._on_account)
         self._poller.positions_updated.connect(self._tab_dashboard._on_positions)
         self._poller.positions_updated.connect(self._tab_chart._on_positions_updated)
         self._poller.positions_updated.connect(self._tab_market.update_positions)
+        self._poller.positions_updated.connect(self._tab_tradebot.update_positions)
         self._poller.status_changed.connect(self._on_alpaca_status)
 
-        # ── Poller → pozycje w TradeBot tab ──────────────────────────────
-        self._poller.positions_updated.connect(self._tab_tradebot.update_positions)
-
-        # ── Worker → dashboard / chart / market / tradebot ────────────────
+        # Worker → dashboard / chart / market / tradebot
         self._worker.account_updated.connect(self._tab_dashboard._on_account)
         self._worker.positions_updated.connect(self._tab_dashboard._on_positions)
         self._worker.positions_updated.connect(self._tab_tradebot.update_positions)
         self._worker.positions_updated.connect(self._tab_chart._on_positions_updated)
         self._worker.positions_updated.connect(self._tab_market.update_positions)
 
-        # ── Refresh buttons ───────────────────────────────────────────────
+        # Refresh requests
         self._tab_dashboard.refresh_requested.connect(self._poller.force_refresh)
         self._tab_tradebot.refresh_requested.connect(self._poller.force_refresh)
 
-        # ── Settings saved → poller reconnect ────────────────────────────
+        # Settings
         self._tab_settings.settings_saved.connect(self._poller.reconnect)
 
-        # ── News poller ───────────────────────────────────────────────────
+        # News poller
         self._news_poller.news_updated.connect(self._tab_news.on_news_updated)
 
-        # ── BrainBot scanner → BrainBotTab ───────────────────────────────
+        # BrainBot scanner
         self._brain_scanner.status_updated.connect(self._on_brain_scanner_status)
         self._brain_scanner.scan_completed.connect(self._tab_brainbot.on_scan_completed)
         self._brain_scanner.journal_updated.connect(self._on_journal_updated)
 
-        # ── Chart ─────────────────────────────────────────────────────────
+        # Chart ↔ market watchlist sync
         self._tab_chart.symbols_changed.connect(self._tab_market.update_watchlist)
+
+        # First poller data → chart ready
         self._poller.account_updated.connect(self._on_first_poller_data)
 
     # ── Slots ─────────────────────────────────────────────────────────────────
@@ -190,24 +407,21 @@ class MainWindow(QMainWindow):
         self._tab_chart.on_poller_ready()
 
     def _on_bot_status(self, status: str):
-        _mono = "font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 11px;"
+        _s = f"{_MONO} font-size: 11px;"
         label_map = {
-            "Running":   ("running",     COLOR_GREEN),
-            "Stopped":   ("stopped",     COLOR_MUTED),
-            "Stopping…": ("stopping…",   COLOR_MUTED),
-            "Error":     ("error",       COLOR_RED),
-            "Starting…": ("starting…",   COLOR_GOLD),
+            "Running":   ("running",   COLOR_GREEN),
+            "Stopped":   ("stopped",   COLOR_MUTED),
+            "Stopping…": ("stopping…", COLOR_MUTED),
+            "Error":     ("error",     COLOR_RED),
+            "Starting…": ("starting…", COLOR_GOLD),
         }
         text, color = label_map.get(status, (status.lower(), COLOR_MUTED))
         self._lbl_bot_status.setText(text)
-        self._lbl_bot_status.setStyleSheet(f"color: {color}; {_mono}")
-        self._dot_bot.setStyleSheet(
-            f"color: {color}; font-size: 9px;"
-            + (" qproperty-text: '●';" if status == "Running" else "")
-        )
+        self._lbl_bot_status.setStyleSheet(f"color: {color}; {_s}")
+        self._dot_bot.setStyleSheet(f"color: {color}; font-size: 9px;")
 
     def _on_alpaca_status(self, status: str):
-        _mono = "font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 11px;"
+        _s = f"{_MONO} font-size: 11px;"
         if "LIVE" in status:
             color = COLOR_RED
         elif "PAPER" in status or "connected" in status.lower():
@@ -215,72 +429,56 @@ class MainWindow(QMainWindow):
         else:
             color = COLOR_MUTED
         self._lbl_alpaca_status.setText(f"Alpaca: {status}")
-        self._lbl_alpaca_status.setStyleSheet(f"color: {color}; {_mono}")
+        self._lbl_alpaca_status.setStyleSheet(f"color: {color}; {_s}")
 
     def _on_brain_scanner_status(self, status: str):
-        _mono = "font-family: 'JetBrains Mono', 'Consolas', monospace; font-size: 11px;"
-        short = status[:60]
+        _s = f"{_MONO} font-size: 11px;"
         running = any(k in status.lower() for k in ("scan", "llm", "running", "analiz"))
-        color = COLOR_GOLD if running else COLOR_MUTED
-        self._lbl_brain_status.setText(short)
-        self._lbl_brain_status.setStyleSheet(f"color: {color}; {_mono}")
+        color   = COLOR_GOLD if running else COLOR_MUTED
+        self._lbl_brain_status.setText(status[:60])
+        self._lbl_brain_status.setStyleSheet(f"color: {color}; {_s}")
         self._dot_brain.setStyleSheet(f"color: {color}; font-size: 9px;")
         self._tab_brainbot.on_scanner_status(status)
 
     def _on_journal_updated(self):
-        """Odświeżenie zakładki Dziennik po każdym cyklu skanowania BrainBota."""
-        # JournalWidget ma własny timer, ale możemy wymusić odświeżenie
         dziennik = self._tab_brainbot._dziennik
         if hasattr(dziennik, "refresh"):
             dziennik.refresh()
 
     def _on_trade_closed(self, info: dict):
-        """Uczenie BrainBota: zapis notatki gdy TradeBot zamknął stratną pozycję."""
         pnl            = info.get("pnl", 0.0)
         was_recommended = info.get("was_recommended", False)
         symbol         = info.get("symbol", "")
         action         = info.get("action", "")
-
         if pnl < 0 and was_recommended and symbol:
-            lesson = (
-                f"TradeBot closed {action} position for {symbol} at loss ${pnl:.2f}. "
-                f"Recommendation was incorrect — technical analysis correction needed."
-            )
             self._journal.add_learning_note(
                 symbol=symbol,
                 predicted=action,
                 result=f"LOSS: ${pnl:.2f}",
-                lesson=lesson,
+                lesson=(
+                    f"TradeBot closed {action} position for {symbol} at loss ${pnl:.2f}. "
+                    "Recommendation was incorrect — technical analysis correction needed."
+                ),
             )
 
     def _open_chart_for_symbol(self, symbol: str):
-        self._tabs.setCurrentWidget(self._tab_chart)
+        self._stack.setCurrentIndex(2)   # Chart page
+        self._sidebar.set_index(2)
         self._tab_chart.load_symbol(symbol)
 
     def _tick_status(self):
         if self._worker.isRunning():
-            from datetime import datetime
+            _s = f"{_MONO} font-size: 11px;"
             now = datetime.now().strftime("%H:%M:%S")
-            self._lbl_bot_status.setText(f"TradeBot: running  •  {now}")
+            self._lbl_bot_status.setText(f"running  •  {now}")
+            self._lbl_bot_status.setStyleSheet(f"color: {COLOR_GREEN}; {_s}")
 
     def closeEvent(self, event):
         _unregister_log_callback(self._tab_tradebot.log_append)
-        if self._worker.isRunning():
-            self._worker.stop()
-            self._worker.wait(5000)
-            if self._worker.isRunning():
-                self._worker.terminate()
-                self._worker.wait(2000)
-        self._poller.stop()
-        if not self._poller.wait(5000):
-            self._poller.terminate()
-            self._poller.wait(2000)
-        self._news_poller.stop()
-        if not self._news_poller.wait(5000):
-            self._news_poller.terminate()
-            self._news_poller.wait(2000)
-        self._brain_scanner.stop()
-        if not self._brain_scanner.wait(5000):
-            self._brain_scanner.terminate()
-            self._brain_scanner.wait(2000)
+        for worker in (self._worker, self._poller, self._news_poller, self._brain_scanner):
+            if hasattr(worker, "stop"):
+                worker.stop()
+            if not worker.wait(5000):
+                worker.terminate()
+                worker.wait(2000)
         event.accept()

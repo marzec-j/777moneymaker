@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QTabWidget, QVBoxLayout, QWidget
+from .styles import make_page_header
 
 from .tab_positions import PositionsTab
 from .tab_logs import LogsTab
@@ -29,7 +30,9 @@ class TradeBotTab(QWidget):
         self._inner.addTab(self._decyzje,  "🧠  Decisions")
 
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setContentsMargins(24, 24, 24, 24)
+        lay.setSpacing(16)
+        lay.addWidget(make_page_header("TradeBot", "Silnik handlowy AI"))
         lay.addWidget(self._inner)
 
     def update_positions(self, positions: list):

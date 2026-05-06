@@ -20,7 +20,7 @@ from PySide6.QtWidgets import (
 from .tab_brain import BrainTab
 from .styles import (
     COLOR_BG, COLOR_BORDER, COLOR_CARD, COLOR_GREEN,
-    COLOR_GOLD, COLOR_MUTED, COLOR_PANEL, COLOR_RED,
+    COLOR_GOLD, COLOR_MUTED, COLOR_PANEL, COLOR_RED, make_page_header,
 )
 
 if TYPE_CHECKING:
@@ -523,7 +523,9 @@ class BrainBotTab(QWidget):
         self._inner.addTab(self._czat,     "💬  Czat")
 
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setContentsMargins(24, 24, 24, 24)
+        lay.setSpacing(16)
+        lay.addWidget(make_page_header("BrainBot", "Autonomiczny skaner rynku AI"))
         lay.addWidget(self._inner)
 
     # ── Scanner slots (forwarding) ────────────────────────────────────────

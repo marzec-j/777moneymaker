@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QComboBox, QDateEdit, QHBoxLayout, QHeaderView, QLabel,
     QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget,
 )
-from .styles import COLOR_GREEN, COLOR_MUTED
+from .styles import COLOR_GREEN, COLOR_MUTED, make_page_header
 from . import log_action
 
 
@@ -31,17 +31,14 @@ class NewsTab(QWidget):
 
     def _setup_ui(self):
         root = QVBoxLayout(self)
-        root.setContentsMargins(16, 16, 16, 16)
-        root.setSpacing(10)
+        root.setContentsMargins(24, 24, 24, 24)
+        root.setSpacing(16)
+
+        root.addWidget(make_page_header("News", "Wiadomości rynkowe z Finnhub"))
 
         # ── Toolbar ───────────────────────────────────────────────────────
         tb = QHBoxLayout()
         tb.setSpacing(8)
-
-        lbl = QLabel("NEWSY RYNKOWE")
-        lbl.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px; font-weight: bold;")
-        tb.addWidget(lbl)
-        tb.addSpacing(12)
 
         lbl_sym = QLabel("Symbol:")
         lbl_sym.setStyleSheet(f"color: {COLOR_MUTED}; font-size: 11px;")

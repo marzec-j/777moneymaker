@@ -20,6 +20,31 @@ COLOR_PANEL  = "#0c1421"
 COLOR_CARD   = "#182537"
 COLOR_BORDER = "#1e2d3f"
 
+
+def make_page_header(title: str, subtitle: str = "") -> "QWidget":
+    """Shared page header widget — matches React's h1 + subtitle pattern."""
+    from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
+    w = QWidget()
+    w.setStyleSheet("background: transparent;")
+    lay = QVBoxLayout(w)
+    lay.setContentsMargins(0, 0, 0, 0)
+    lay.setSpacing(2)
+    lbl_title = QLabel(title)
+    lbl_title.setStyleSheet(
+        "font-size: 22px; font-weight: 700; color: #e2e8f0;"
+        " font-family: 'Inter','Segoe UI',sans-serif; background: transparent; border: none;"
+    )
+    lay.addWidget(lbl_title)
+    if subtitle:
+        lbl_sub = QLabel(subtitle)
+        lbl_sub.setStyleSheet(
+            "font-size: 11px; color: #7a8fa6;"
+            " font-family: 'JetBrains Mono','Consolas',monospace; background: transparent; border: none;"
+        )
+        lay.addWidget(lbl_sub)
+    return w
+
+
 DARK_THEME = """
 /* ── Base ─────────────────────────────────────────────────────────── */
 QMainWindow, QDialog {
