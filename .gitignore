@@ -1,0 +1,27 @@
+# Klucze API — NIGDY nie commituj!
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Logi i dane
+logs/
+data/
+err_out.txt
+
+# Skrypty lokalne
+setup.bat
+start.bat
+
+# IDE
+.idea/
+.vscode/
+.claude/
+*.swp
