@@ -22,14 +22,14 @@ class RiskManager:
         self._take_profit_pct = r.get("take_profit_pct", 0.04)
         self._min_conf = r.get("min_confidence", 0.65)
 
-    @property
-    def _max_open(self) -> int:
-        return self._config.get("risk", {}).get("max_open_positions", 5)
-
         self._daily_start_equity: Optional[float] = None
         self._daily_pnl: float = 0.0
         self._today: date = date.today()
         self._trading_halted: bool = False
+
+    @property
+    def _max_open(self) -> int:
+        return self._config.get("risk", {}).get("max_open_positions", 5)
 
     def update_equity(self, equity: float):
         today = date.today()
