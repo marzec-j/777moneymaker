@@ -14,13 +14,17 @@ logger = logging.getLogger("777moneymaker")
 
 class RiskManager:
     def __init__(self, config: dict):
+        self._config = config
         r = config.get("risk", {})
         self._max_pos_pct = r.get("max_position_pct", 0.10)
         self._max_daily_loss_pct = r.get("max_daily_loss_pct", 0.03)
         self._stop_loss_pct = r.get("stop_loss_pct", 0.02)
         self._take_profit_pct = r.get("take_profit_pct", 0.04)
-        self._max_open = r.get("max_open_positions", 5)
         self._min_conf = r.get("min_confidence", 0.65)
+
+    @property
+    def _max_open(self) -> int:
+        return self._config.get("risk", {}).get("max_open_positions", 5)
 
         self._daily_start_equity: Optional[float] = None
         self._daily_pnl: float = 0.0
